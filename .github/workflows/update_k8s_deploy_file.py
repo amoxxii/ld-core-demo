@@ -1,11 +1,4 @@
 import os
-import requests
-import json
-import shutil
-from ruamel.yaml import YAML
-import yaml
-import base64
-import time
 import subprocess
 
 def main():
