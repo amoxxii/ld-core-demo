@@ -31,7 +31,7 @@ export function recordErrorToLD(
     if (typeof window === "undefined") {
       return
     }
-
+    
     if (LDObserve && typeof LDObserve.recordError === "function") {
       // @ts-ignore - type compatibility with LDObserve.recordError
       LDObserve.recordError(error, message, payload, finalSource, type)
@@ -41,4 +41,3 @@ export function recordErrorToLD(
     console.warn("Failed to record error to LaunchDarkly observability:", err)
   }
 }
-
