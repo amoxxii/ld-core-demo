@@ -40,10 +40,7 @@ export function recordErrorToLD(
     if (LDObserve && typeof LDObserve.recordError === "function") {
       // @ts-ignore - type compatibility with LDObserve.recordError
       LDObserve.recordError(error, message, payload, finalSource, type)
-      console.log("[LD Observability] Error recorded:", error.name, message?.substring(0, 50))
       return
-    } else {
-      console.warn("[LD Observability] recordError not available - import:", !!LDObserveImport, "window:", !!(window as any).LDObserve)
     }
   } catch (err) {
     console.warn("Failed to record error to LaunchDarkly observability:", err)
