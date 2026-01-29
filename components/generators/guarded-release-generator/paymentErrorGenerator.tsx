@@ -44,7 +44,7 @@ const PaymentErrorGenerator = ({ flagKey, title }: { flagKey: string; title: str
 				
 			userCounterRef.current += 1;
 			setUserCounter(userCounterRef.current);
-		}, 1); 
+		}, 200); 
 		}
 
 		return () => {
@@ -104,6 +104,16 @@ const PaymentErrorGenerator = ({ flagKey, title }: { flagKey: string; title: str
 				timestamp: new Date().toISOString(),
 			}
 		);
+
+		client?.track("$ld:telemetry:error", {
+			"error.kind": errorKind,
+			"error.message": errorMessage,
+			"service.name": "transaction-monitoring",
+			"component": "TransactionMonitoring",
+			"user.id": userContext.key,
+			"flag.key": flagKey,
+			"severity": "high"
+		}, 1);
 
 		(error as any).component = "TransactionMonitoring";
 		(error as any).errorType = errorKind;
