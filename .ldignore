@@ -2,6 +2,7 @@
 **/tests/
 *.config.ts
 *.config.js
+*.config.mjs
 package-lock*
 **/*.spec.ts
 package.json

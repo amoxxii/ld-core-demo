@@ -1,110 +1,82 @@
-# LaunchDarkly Core Demo
+# Policy Agent Node (Triage-only UI)
 
-A multi-industry demonstration application built on Next.js showcasing LaunchDarkly's feature management capabilities including feature flags, experimentation, AI integrations, and progressive delivery.
+Minimal Next.js app that implements the ToggleHealth UI and **triage agent only**: user query → LaunchDarkly AI Config (`triage_agent`) → Bedrock → display classification. No other agents yet.
 
-## Industry Verticals
+- **UI**: Same layout (hero, services, Coverage Concierge chat widget). Input sends to triage; response shows routing and confidence.
+- **Server**: Next.js App Router with `POST /api/chat` and `GET /api/health`. Uses LaunchDarkly server-side AI Config for `triage_agent` and AWS Bedrock Converse. Backend logic lives in `server/` (ld.js, triage.js, bedrock.js).
+- **Docker**: Multi-stage build (deps → builder → runner). Build driven by the Dockerfile; `npm run build` produces `.next`; runner copies `.next`, `public`, `node_modules`, `package.json`. Env injected at runtime (no `.env` in image).
 
-| Vertical | Description | Route |
-|----------|-------------|-------|
-| **Toggle Bank** | Banking - account management, credit cards, mortgages | `/bank` |
-| **Frontier Capital** | Investment - portfolio management, stock trading | `/investment` |
-| **Launch Airways** | Airlines - flight booking, check-in, travel | `/airways` |
-| **Galaxy Marketplace** | E-commerce - product catalog, shopping cart | `/marketplace` |
-| **Risk Management Bureau** | Government - regulatory services | `/government` |
-
-## Tech Stack
-
-- **Framework**: Next.js 16 with React 19
-- **Styling**: TailwindCSS with Radix UI components
-- **Database**: PostgreSQL with Drizzle ORM
-- **Feature Management**: LaunchDarkly SDK (client + server)
-- **AI Integration**: AWS Bedrock, OpenAI
-- **Observability**: LaunchDarkly Telemetry & Session Replay
-
-## Local Development
-
-### Prerequisites
-
-- Node.js 22+
-- npm
-
-### Setup
+## Quick start (local)
 
 ```bash
-# Install dependencies
+cp .env.example .env.local
+# Edit .env.local: set LD_SDK_KEY; set AWS_PROFILE=aiconfigdemo and run: aws sso login --profile aiconfigdemo
 npm install
-
-# Create environment file
-cp .env.example .env.local  # or create .env.local manually
-
-# Run development server
 npm run dev
 ```
 
-### Environment Variables
+Open http://localhost:3000.
+
+## Quick start (Docker)
+
+```bash
+docker build -t policy-agent-node .
+
+# Run: pass LD_SDK_KEY and AWS_REGION. Omit AWS_PROFILE so the SDK uses env/role (EKS pod role).
+docker run -p 3000:3000 -e LD_SDK_KEY=your-key -e AWS_REGION=us-east-1 policy-agent-node
+```
+
+For local Docker you can use `--env-file .env`. In EKS, inject only the vars the app needs; Bedrock credentials come from the pod’s IAM role (IRSA).
+
+## Environment
 
 | Variable | Description |
 |----------|-------------|
-| `NEXT_PUBLIC_LD_CLIENT_KEY` | LaunchDarkly client-side SDK key |
-| `LD_SDK_KEY` | LaunchDarkly server-side SDK key |
-| `LD_API_KEY` | LaunchDarkly API key |
-| `PROJECT_KEY` | LaunchDarkly project key |
-| `OPENAI_API_KEY` | OpenAI API key (for AI chatbot) |
-| `BEDROCK_GUARDRAIL_ID` | AWS Bedrock guardrail ID |
-| `BEDROCK_KNOWLEDGE_ID` | AWS Bedrock knowledge base ID |
+| `LD_SDK_KEY` | Server-side SDK key (project: nteixeira-ld-demo) |
+| `AWS_REGION` | e.g. `us-east-1` |
+| `AWS_PROFILE` | Local only: SSO profile (e.g. `aiconfigdemo`). Omit in Docker/EKS. |
+| `PORT` | Server port (default 3000) |
 
-## Demo Environment Provisioning
+**AWS credentials**
 
-Demo environments are provisioned via GitHub Actions workflows that automate the entire setup process.
+- **Local**: Set `AWS_PROFILE=aiconfigdemo` in `.env.local` and run `aws sso login --profile aiconfigdemo`.
+- **Docker / EKS**: Do *not* set `AWS_PROFILE`. The SDK uses the default chain; in EKS this is the pod’s IAM role (IRSA).
 
-### Available Workflows
+## LaunchDarkly Code References
 
-| Workflow | Purpose |
-|----------|---------|
-| `cloud_demo_environment_create.yaml` | Creates a new demo environment |
-| `cloud_demo_environment_recreate.yaml` | Rebuilds an existing environment |
-| `cloud_demo_environment_deprovisioning.yaml` | Deletes a demo environment |
+Code references link feature-flag usage in this repo to LaunchDarkly. Configuration is in `.launchdarkly/coderefs.yaml` (project: `nteixeira-ld-demo`, repo: `policy-agent-node`).
 
-### Provisioning Process
+- **Manual update**: `npm run update-code-refs` (requires `LD_API_KEY` and `ld-find-code-refs` installed: `npm install -g @launchdarkly/ld-find-code-refs`).
+- **Automatic (optional)**: Add a git post-commit hook that runs the script in the background when `LD_API_KEY` is set. See [LaunchDarkly code references](https://docs.launchdarkly.com/guides/code-references/).
 
-1. **LaunchDarkly Setup**: Creates a new LD project with pre-configured feature flags
-2. **Docker Build**: Builds and pushes container image to Amazon ECR
-3. **Kubernetes Deployment**: Deploys to EKS cluster with dedicated namespace
-4. **DNS Configuration**: Creates Route53 CNAME record at `{username}.launchdarklydemos.com`
+## API
 
-### Triggering a New Environment
+- `POST /api/chat`  
+  Body: `{ "userInput": "What's my copay for a specialist?" }`  
+  Returns: `{ response, requestId, agentFlow, metrics }` (triage only).
+- `GET /api/health`  
+  Returns `{ status: "ok" }`.
 
-1. Navigate to **Actions** → **Core Demo Project Provisioning**
-2. Click **Run workflow**
-3. Enter your username
-4. The environment will be available at `https://{username}.launchdarklydemos.com`
-
-## Project Structure
+## Project layout
 
 ```
-├── components/          # React components
-│   ├── ui/             # Reusable UI components (Radix-based)
-│   ├── chatbot/        # AI chatbot component
-│   └── generators/     # Automation generators
-├── pages/              # Next.js pages and API routes
-│   ├── api/            # Backend API endpoints
-│   └── *.tsx           # Page components
-├── lib/                # Data and utilities
-├── utils/              # Helper functions and contexts
-├── public/             # Static assets
-├── styles/             # Global CSS
-└── .github/workflows/  # CI/CD pipelines
+policy-agent-node/
+├── app/
+│   ├── layout.js          # Root layout + globals.css
+│   ├── page.js            # Home + Coverage Concierge chat (client)
+│   └── api/
+│       ├── chat/route.js  # POST /api/chat → server/triage
+│       └── health/route.js
+├── server/
+│   ├── ld.js              # LaunchDarkly client + triage_agent config
+│   ├── triage.js           # Run triage: LD config → Bedrock → parse JSON
+│   └── bedrock.js          # Bedrock Converse streaming
+├── public/                 # Static assets (unchanged)
+├── Dockerfile              # Multi-stage: deps → builder → runner
+├── next.config.mjs
+├── .env.example
+├── .env.local             # copy from .env.example; not committed
+├── .launchdarkly/coderefs.yaml
+├── scripts/update-code-refs.sh
+└── package.json
 ```
-
-## Scripts
-
-```bash
-npm run dev       # Start development server
-npm run build     # Build for production
-npm run start     # Start production server
-npm run lint      # Run linter
-```
-
-## Additional Documentation
-
-For detailed architecture and system design, see [SYSTEM_DESIGN.md](./SYSTEM_DESIGN.md).
