@@ -9,7 +9,6 @@ const QUERY_TYPE_LABEL = {
 
 export async function runTriage(query, userContext = {}, options = {}) {
   const log = options.logger ?? (() => {});
-  log({ level: "INFO", message: "sdk key used: " + process.env.LD_SDK_KEY, name: "key" });
   const contextVars = {
     user_key: userContext.user_key ?? "anonymous",
     user_context: JSON.stringify(userContext, null, 2),
