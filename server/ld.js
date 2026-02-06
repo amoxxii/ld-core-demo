@@ -1,29 +1,22 @@
 import path from "path";
-import { readFileSync } from "fs";
-import { fileURLToPath } from "url";
 import { config as loadEnv } from "dotenv";
 import { init } from "@launchdarkly/node-server-sdk";
 import { initAi } from "@launchdarkly/server-sdk-ai";
+import * as defaults from "./ai-config-defaults.js";
 
 // Ensure .env.local is loaded when running locally (Next.js can miss it with Turbopack/cwd)
 if (process.env.NODE_ENV !== "production") {
   loadEnv({ path: path.resolve(process.cwd(), ".env.local"), override: true });
 }
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-// Load default AI configs from ai-config-defaults.json
-const AI_CONFIG_DEFAULTS = JSON.parse(
-  readFileSync(path.join(__dirname, "ai-config-defaults.json"), "utf-8")
-);
-
-export const TRIAGE_DEFAULT = AI_CONFIG_DEFAULTS.triage_agent;
-export const BRAND_AGENT_DEFAULT = AI_CONFIG_DEFAULTS.brand_agent;
+export const TRIAGE_DEFAULT = defaults.triage_agent;
+export const BRAND_AGENT_DEFAULT = defaults.brand_agent;
 
 /** Map queryType from triage to LaunchDarkly AI Config key and fallback. */
 export const SPECIALIST_AI_CONFIG = {
-  policy_question: { configKey: "policy_agent", fallback: AI_CONFIG_DEFAULTS.policy_agent },
-  provider_lookup: { configKey: "provider_agent", fallback: AI_CONFIG_DEFAULTS.provider_agent },
-  scheduler_agent: { configKey: "scheduler_agent", fallback: AI_CONFIG_DEFAULTS.scheduler_agent },
+  policy_question: { configKey: "policy_agent", fallback: defaults.policy_agent },
+  provider_lookup: { configKey: "provider_agent", fallback: defaults.provider_agent },
+  scheduler_agent: { configKey: "scheduler_agent", fallback: defaults.scheduler_agent },
 };
 
 let ldClient = null;

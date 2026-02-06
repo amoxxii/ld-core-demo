@@ -60,11 +60,23 @@ Open http://localhost:3000.
 
 ```bash
 docker build -t policy-agent-node .
-
-# Run: pass LD_SDK_KEY and AWS_REGION. Omit AWS_PROFILE so the SDK uses env/role (EKS pod role).
-docker run -p 3000:3000 -e LD_SDK_KEY=your-key -e AWS_REGION=us-east-1 policy-agent-node
 ```
-For local Docker you can use `--env-file .env`.
+
+**Docker (local)** — use your host AWS profile (e.g. SSO). Mount `~/.aws` and set `AWS_PROFILE`:
+
+```bash
+docker run -p 3000:3000 \
+  -e LD_SDK_KEY=your-key \
+  -e AWS_REGION=us-east-1 \
+  -e AWS_PROFILE=aiconfigdemo \
+  -e HOME=/app \
+  -v "$HOME/.aws:/app/.aws:ro" \
+  policy-agent-node
+```
+
+Run `aws sso login --profile aiconfigdemo` on the host first. Alternatively use `--env-file .env` (do not commit `.env`).
+
+**Docker (EKS / deployed)** — omit `AWS_PROFILE` and do not mount `~/.aws`; the SDK uses the pod IAM role (IRSA).
 
 
 ## Environment
@@ -100,11 +112,12 @@ policy-agent-node/
 │       ├── chat/route.js  # POST /api/chat → server/triage
 │       └── health/route.js
 ├── server/
-│   ├── ld.js               # LaunchDarkly client + triage_agent config
-│   ├── triage.js           # Triage: LD config → Bedrock → queryType
-│   ├── specialists.js      # Policy / Provider / Schedule specialists (Bedrock)
-│   ├── brand.js            # Brand agent: specialist reply → final response
-│   └── bedrock.js          # Bedrock Converse streaming
+│   ├── ai-config-defaults.js  # Default prompts/model per agent
+│   ├── ld.js                  # LaunchDarkly client + getAIConfig
+│   ├── triage.js              # Triage: LD config → Bedrock → queryType
+│   ├── specialists.js         # Policy / Provider / Schedule specialists 
+│   ├── brand.js               # Brand agent: specialist reply → final response
+│   └── bedrock.js             # Bedrock Converse streaming
 ├── public/                 # Static assets (unchanged)
 ├── Dockerfile              # Multi-stage: deps → builder → runner
 ├── next.config.mjs
