@@ -39,7 +39,7 @@ function ChatWidget() {
     {
       role: "assistant",
       content:
-        "Hello! I'm your ToggleHealth assistant. Send a message and I'll classify it with the triage agent (no other agents yet).",
+        "Hello! I'm your ToggleHealth assistant. Send a message and I'll classify it with the triage agent.",
       markdown: false,
     },
   ]);
