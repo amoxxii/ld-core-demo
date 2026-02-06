@@ -1,10 +1,10 @@
-import { getTriageConfig, buildMessagesFromLdConfig } from "./ld.js";
+import { getAIConfig, buildMessagesFromLdConfig, TRIAGE_DEFAULT } from "./ld.js";
 import { converse } from "./bedrock.js";
 
 const QUERY_TYPE_LABEL = {
   policy_question: "Policy Specialist",
   provider_lookup: "Provider Specialist",
-  schedule_agent: "Scheduler",
+  scheduler_agent: "Scheduler",
 };
 
 export async function runTriage(query, userContext = {}, options = {}) {
@@ -16,9 +16,10 @@ export async function runTriage(query, userContext = {}, options = {}) {
     ...userContext,
   };
 
-  log({ level: "INFO", message: "📥 Pulling AI config from LaunchDarkly (triage_agent)...", name: "triage" });
-  const { config, tracker } = await getTriageConfig(contextVars);
-  const modelId = config.model?.name ?? "us.anthropic.claude-3-5-sonnet-v2:0";
+  const configKey = process.env.LD_AI_CONFIG_KEY || "triage_agent";
+  log({ level: "INFO", message: `📥 Pulling AI config from LaunchDarkly (${configKey})...`, name: "triage" });
+  const { config, tracker } = await getAIConfig(configKey, contextVars, TRIAGE_DEFAULT);
+  const modelId = config.model?.name ?? TRIAGE_DEFAULT.model.name;
   log({ level: "INFO", message: `   Model: ${modelId}`, name: "triage" });
 
   const messages = buildMessagesFromLdConfig(config, contextVars);
@@ -59,7 +60,7 @@ export async function runTriage(query, userContext = {}, options = {}) {
     parsed = JSON.parse(raw);
   } catch {
     parsed = {
-      query_type: "schedule_agent",
+      query_type: "scheduler_agent",
       confidence_score: 0.5,
       extracted_context: {},
       escalation_needed: true,
@@ -67,7 +68,7 @@ export async function runTriage(query, userContext = {}, options = {}) {
     };
   }
 
-  const queryType = parsed.query_type ?? "schedule_agent";
+  const queryType = parsed.query_type ?? "scheduler_agent";
   const confidence = parsed.confidence_score ?? 0;
   const label = QUERY_TYPE_LABEL[queryType] ?? "Scheduler";
 
@@ -80,7 +81,6 @@ export async function runTriage(query, userContext = {}, options = {}) {
     extractedContext: parsed.extracted_context ?? {},
     agentData: {
       triage_router: {
-        model: modelId,
         tokens: result.usage
           ? { input: result.usage.inputTokens, output: result.usage.outputTokens }
           : undefined,

@@ -1,11 +1,13 @@
 import { runTriage } from "../../../server/triage.js";
+import { runSpecialist } from "../../../server/specialists.js";
+import { runBrandAgent } from "../../../server/brand.js";
 import { pushLog } from "../../../lib/log-stream";
 
 function createUserContext(body = {}) {
   return {
     user_key: "anonymous",
-    name: body.userName ?? "Marek Poliks",
-    location: body.location ?? "San Francisco, CA",
+    name: body.userName ?? "Ellen McLain",
+    location: body.location ?? "Cadillac, MI",
     policy_id: body.policyId ?? "TH-HMO-GOLD-2024",
     coverage_type: body.coverageType ?? "Gold HMO",
   };
@@ -26,10 +28,11 @@ export async function POST(request) {
 
   const requestId = crypto.randomUUID();
   const userContext = createUserContext(body);
+  const query = userInput.trim();
 
   pushLog({
     level: "INFO",
-    message: `💬 Chat request (${requestId.slice(0, 8)}…) · "${userInput.trim().slice(0, 60)}${userInput.length > 60 ? "…" : ""}"`,
+    message: `💬 Chat request (${requestId.slice(0, 8)}…) · "${query.slice(0, 60)}${query.length > 60 ? "…" : ""}"`,
     name: "chat",
   });
   pushLog({
@@ -38,20 +41,33 @@ export async function POST(request) {
     name: "chat",
   });
 
-  const logger = (entry) => pushLog({ ...entry, name: entry.name ?? "triage" });
+  const logger = (entry) => pushLog({ ...entry, name: entry.name ?? "chat" });
 
   try {
-    const triageResult = await runTriage(userInput.trim(), userContext, { logger });
-
+    // 1. Triage: route to one of policy_question, provider_lookup, scheduler_agent
+    const triageResult = await runTriage(query, userContext, { logger });
     pushLog({
       level: "INFO",
-      message: `✅ Triage complete: ${triageResult.nextAgent} (${(triageResult.confidence * 100).toFixed(0)}%)`,
+      message: `✅ Triage ==> ${triageResult.nextAgent} @ ${(triageResult.confidence * 100).toFixed(0)}% confidence`,
       name: "chat",
     });
 
-    const responseText =
-      `Your question was classified as **${triageResult.nextAgent}** (confidence: ${(triageResult.confidence * 100).toFixed(0)}%).\n\n` +
-      (triageResult.reasoning ? `Reasoning: ${triageResult.reasoning}` : "");
+    // 2. Specialist: run the chosen agent
+    const specialistResult = await runSpecialist(
+      triageResult.queryType,
+      query,
+      userContext,
+      { logger }
+    );
+
+    // 3. Brand agent: turn specialist response into final customer reply
+    const brandResult = await runBrandAgent(
+      specialistResult.content,
+      query,
+      triageResult.queryType,
+      userContext,
+      { logger }
+    );
 
     const agentFlow = [
       {
@@ -64,16 +80,34 @@ export async function POST(request) {
         ttft_ms: triageResult.agentData.triage_router.ttft_ms,
         tokens: triageResult.agentData.triage_router.tokens,
       },
+      {
+        agent: triageResult.queryType,
+        name: triageResult.nextAgent,
+        status: "complete",
+        icon: "📋",
+        duration: specialistResult.durationMs,
+        ttft_ms: specialistResult.ttftMs,
+        tokens: specialistResult.usage,
+      },
+      {
+        agent: "brand_agent",
+        name: "Brand Voice",
+        status: "complete",
+        icon: "✨",
+        duration: brandResult.durationMs,
+        ttft_ms: brandResult.ttftMs,
+        tokens: brandResult.usage,
+      },
     ];
 
     return Response.json({
-      response: responseText,
+      response: brandResult.content,
       requestId,
       agentFlow,
       metrics: {
         query_type: triageResult.queryType,
         confidence: triageResult.confidence,
-        agent_count: 1,
+        agent_count: 3,
         rag_enabled: false,
       },
     });
