@@ -1,3 +1,12 @@
+import { withLDProvider } from 'launchdarkly-react-client-sdk';
+
+function MyApp({ Component, pageProps }) {
+  return <Component {...pageProps} />;
+}
+
+export default withLDProvider({
+  clientSideID: process.env.NEXT_PUBLIC_LD_CLIENT_KEY,
+})(MyApp);
 import "@/styles/globals.css";
 import "@/styles/bank.css";
 import "@/styles/home.css";

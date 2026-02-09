@@ -1,6 +1,7 @@
 {
   "name": "multi-industry-demo",
   "version": "2.9.9",
+  "type": "module",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -100,5 +101,21 @@
     "postcss-cli": "^9.1.0",
     "tailwindcss": "^3.3.0",
     "typescript": "^5"
-  }
+  },
+  "description": "A multi-industry demonstration application built on Next.js showcasing LaunchDarkly's feature management capabilities including feature flags, experimentation, AI integrations, and progressive delivery.",
+  "main": "next.config.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/launchdarkly-labs/ld-core-demo.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/launchdarkly-labs/ld-core-demo/issues"
+  },
+  "homepage": "https://github.com/launchdarkly-labs/ld-core-demo#readme"
 }
