@@ -1,43 +1,40 @@
 /** @type {import('next').NextConfig} */
-import fs from 'fs'
-import path from 'path'
-import { fileURLToPath } from 'url'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
-
-const pkg = JSON.parse(
-  fs.readFileSync(path.join(__dirname, 'package.json'), 'utf-8')
-)
-
-const { version } = pkg
+const { version } = require('./package.json');
+const webpack = require('webpack');
 
 const nextConfig = {
   reactStrictMode: false,
   output: 'standalone',
-  productionBrowserSourceMaps: true,
+  productionBrowserSourceMaps: true, // enable source maps for LaunchDarkly
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: true
   },
-  turbopack: {},
+  turbopack: {}, // Acknowledge Turbopack is used (webpack config is fallback for non-Turbopack builds)
   env: {
     NEXT_PUBLIC_APP_VERSION: version,
     NEXT_PUBLIC_CREATED_DATE: new Date().toISOString(),
   },
-  webpack: (config, { isServer, webpack }) => {
+  webpack: (config, { isServer, dev }) => {
     if (!isServer) {
-      config.devtool = false
+      // Remove the default devtool setting
+      config.devtool = false;
+      
+      // Use SourceMapDevToolPlugin to have full control over source map generation
+      // This ensures source content is embedded in the maps for LaunchDarkly
       config.plugins.push(
         new webpack.SourceMapDevToolPlugin({
           filename: '[file].map',
+          // Include original source code in the source map
           noSources: false,
+          // This embeds the actual source content, not just references
           module: true,
           columns: true,
         })
-      )
+      );
     }
-    return config
-  },
+    return config;
+  }
 }
 
-export default nextConfig
+module.exports = nextConfig
+
