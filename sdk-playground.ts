@@ -95,10 +95,10 @@ const frontendObservability = new Observability({
 // ================================
 import ObservabilityNode from "@launchdarkly/observability-node";
 
-const backendObservability = new ObservabilityNode({
-  serviceName: "backend-service",
-  version: "1.0.0",
-});
+// const backendObservability = new ObservabilityNode({
+//   serviceName: "backend-service",
+//   version: "1.0.0",
+// });
 
 
 

@@ -36,7 +36,7 @@ class DemoBuilder:
         self.create_segments()
         self.create_metrics()
         self.create_metric_groups()
-        self.create_flags()
+        self.create_s()
         self.update_add_userid_to_flags()
         #self.create_alerts()
         self.create_ai_config()

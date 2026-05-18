@@ -36,6 +36,8 @@ yarn-error.log*
 
 # local env files
 .env*.local
+.env*
+.env*.example
 
 # vercel
 .vercel
@@ -58,3 +60,7 @@ secrets.yaml
 trustpolicy.json
 
 **/.claude/settings.local.json
+.env.example
+.env.example
+.env.example
+.env.example

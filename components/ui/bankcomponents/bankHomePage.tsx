@@ -47,6 +47,7 @@ export default function BankHomePage() {
     const { logLDMetricSent } = useContext(LiveLogsContext);
     const router = useRouter();
     const flags = useFlags();
+    console.log("FLAGS:", flags);
 
     const handleJoinNowClick = () => {
         // signup flow
@@ -125,10 +126,14 @@ export default function BankHomePage() {
     const widgetPositionFlag = flags["swapWidgetPositions"];
     const shouldSwapWidgets = widgetPositionFlag === true;
 
-
+const darkMode = flags["darkModeInterfaceOption"];
     return (
         <motion.main
             className={`relative min-w-screen min-h-screen overflow-hidden`}
+            // className={`relative min-w-screen min-h-screen overflow-hidden ${
+            // darkMode ? "bg-black text-white" : "bg-white text-black"
+            // }`}
+            // style={{ background: darkMode ? "black" : "white" }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5 }}

@@ -21,7 +21,9 @@ class LDPlatform:
     def __init__(self, api_key, api_key_user, email):
         self.api_key = api_key
         self.api_key_user = api_key_user
-        self.user_id = self.get_user_id(email)
+        
+        # FORCE correct maintainer ID (your actual Member ID)
+        self.user_id = "69831a42f36a000a0be611b7"
 
     def getrequest(self, method, url, json=None, headers=None):
 
